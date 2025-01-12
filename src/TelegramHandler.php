@@ -119,7 +119,7 @@ class TelegramHandler extends AbstractProcessingHandler
                 return view($template, array_merge($record->toArray(), [
                         'appName'   => $this->appName,
                         'appEnv'    => $this->appEnv,
-                        'formatted' => $record->formatted,
+                        'formatted' => $this->addPrefixToLinks($record->formatted),
                     ])
                 )->render();
             }
@@ -131,7 +131,7 @@ class TelegramHandler extends AbstractProcessingHandler
             )->render();
         }
 
-        return sprintf("<b>%s</b> (%s)\n%s", $this->appName, $record['level_name'], $record['formatted']);
+        return sprintf("<b>%s</b> (%s)\n%s", $this->appName, $record['level_name'], $this->addPrefixToLinks($record['formatted']));
     }
 
     /**
@@ -179,5 +179,13 @@ class TelegramHandler extends AbstractProcessingHandler
         }
 
         return config($defaultConfigKey ?: "telegram-logger.$key");
+    }
+
+    /**
+    * Prevent blind SSRF on auto load links
+    */
+    private function addPrefixToLinks($text): string
+    {
+        return preg_replace('#([\s\W])(http|https|ldap|file|ftp|sftp|ssh|udp|mail|tcp])://#','$1protol-$2://',$text);
     }
 }
